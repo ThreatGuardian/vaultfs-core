@@ -6,6 +6,8 @@ state.json
 REPO.md
 PLAN.md
 EXECUTION_PLAN.md
+AUTH_EXECUTION_PLAN.md
+serviceAccount.json
 
 # Java build outputs
 out/

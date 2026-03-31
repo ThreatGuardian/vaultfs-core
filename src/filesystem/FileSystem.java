@@ -1,9 +1,13 @@
 package filesystem;
 
+import auth.AuthManager;
 import java.io.File;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import sync.FirestoreSync;
+import utils.Colors;
 
 /**
  * Core engine that connects data structures and sandbox disk operations.
@@ -32,14 +36,14 @@ public class FileSystem {
 
     /** Prints the absolute path of the current directory. */
     public void pwd() {
-        System.out.println(currentDirectory.absolutePath);
+        System.out.println(Colors.c(Colors.CYAN, currentDirectory.absolutePath));
         exportState();
     }
 
     /** Changes the current directory using root, parent, single-name, or path traversal rules. */
     public void cd(String path) {
         if (path == null || path.isEmpty()) {
-            System.out.println("Directory not found: " + path);
+            System.out.println(Colors.c(Colors.RED, "Directory not found: " + path));
             exportState();
             return;
         }
@@ -54,7 +58,7 @@ public class FileSystem {
             if (currentDirectory.parent != null) {
                 currentDirectory = currentDirectory.parent;
             } else {
-                System.out.println("Already at root");
+                System.out.println(Colors.c(Colors.RED, "Already at root"));
             }
             exportState();
             return;
@@ -79,7 +83,7 @@ public class FileSystem {
 
                 models.FileNode next = walker.getChild(part);
                 if (next == null) {
-                    System.out.println("Directory not found: " + part);
+                    System.out.println(Colors.c(Colors.RED, "Directory not found: " + part));
                     failed = true;
                     break;
                 }
@@ -97,7 +101,7 @@ public class FileSystem {
         if (next != null) {
             currentDirectory = next;
         } else {
-            System.out.println("Directory not found: " + path);
+            System.out.println(Colors.c(Colors.RED, "Directory not found: " + path));
         }
         exportState();
     }
@@ -105,7 +109,7 @@ public class FileSystem {
     /** Creates a new child directory in memory and in the sandbox on disk. */
     public void mkdir(String name) {
         if (currentDirectory.getChild(name) != null) {
-            System.out.println("Directory already exists: " + name);
+            System.out.println(Colors.c(Colors.RED, "Directory already exists: " + name));
             exportState();
             return;
         }
@@ -113,13 +117,14 @@ public class FileSystem {
         String absolutePath = currentDirectory.absolutePath + File.separator + name;
         boolean created = new File(absolutePath).mkdir();
         if (!created) {
-            System.out.println("Failed to create directory on disk: " + name);
+            System.out.println(Colors.c(Colors.RED, "Failed to create directory on disk: " + name));
             exportState();
             return;
         }
 
         tree.insertDirectory(currentDirectory, name, absolutePath);
-        System.out.println("Directory '" + name + "' created successfully.");
+        System.out.println("Directory '" + Colors.c(Colors.BLUE, name) + "' "
+                + Colors.c(Colors.GREEN, "created successfully") + ".");
         exportState();
     }
 
@@ -127,7 +132,7 @@ public class FileSystem {
     public void rmdir(String name, boolean force) {
         models.FileNode node = currentDirectory.getChild(name);
         if (node == null) {
-            System.out.println("Directory not found: " + name);
+            System.out.println(Colors.c(Colors.RED, "Directory not found: " + name));
             exportState();
             return;
         }
@@ -136,7 +141,7 @@ public class FileSystem {
         boolean hasFiles = node.files != null && node.files.size() > 0;
 
         if (!force && (hasChildren || hasFiles)) {
-            System.out.println("Directory not empty. Use rmdir -f " + name);
+            System.out.println(Colors.c(Colors.RED, "Directory not empty. Use rmdir -f " + name));
             exportState();
             return;
         }
@@ -148,7 +153,8 @@ public class FileSystem {
         }
 
         tree.removeDirectory(node);
-        System.out.println("Directory '" + name + "' removed successfully.");
+        System.out.println("Directory '" + Colors.c(Colors.BLUE, name) + "' "
+            + Colors.c(Colors.GREEN, "removed successfully") + ".");
         exportState();
     }
 
@@ -169,7 +175,7 @@ public class FileSystem {
     public void renameDirectory(String oldName, String newName) {
         models.FileNode node = currentDirectory.getChild(oldName);
         if (node == null) {
-            System.out.println("Directory not found: " + oldName);
+            System.out.println(Colors.c(Colors.RED, "Directory not found: " + oldName));
             exportState();
             return;
         }
@@ -178,7 +184,7 @@ public class FileSystem {
         String newPath = currentDirectory.absolutePath + File.separator + newName;
         boolean renamed = new File(oldPath).renameTo(new File(newPath));
         if (!renamed) {
-            System.out.println("Failed to rename directory: " + oldName);
+            System.out.println(Colors.c(Colors.RED, "Failed to rename directory: " + oldName));
             exportState();
             return;
         }
@@ -192,7 +198,7 @@ public class FileSystem {
     /** Creates a file entry in list/map/heap and creates the file on disk. */
     public void createFile(String filename, long sizeBytes) {
         if (currentDirectory.fileIndex.contains(filename)) {
-            System.out.println("File already exists: " + filename);
+            System.out.println(Colors.c(Colors.RED, "File already exists: " + filename));
             exportState();
             return;
         }
@@ -201,12 +207,12 @@ public class FileSystem {
         try {
             boolean created = new File(filePath).createNewFile();
             if (!created) {
-                System.out.println("Failed to create file on disk: " + filename);
+                System.out.println(Colors.c(Colors.RED, "Failed to create file on disk: " + filename));
                 exportState();
                 return;
             }
         } catch (IOException e) {
-            System.out.println("Failed to create file: " + e.getMessage());
+            System.out.println(Colors.c(Colors.RED, "Failed to create file: " + e.getMessage()));
             exportState();
             return;
         }
@@ -215,14 +221,16 @@ public class FileSystem {
         currentDirectory.files.add(m);
         currentDirectory.fileIndex.put(filename, m);
         globalHeap.insert(filename, filePath, sizeBytes);
-        System.out.println("File '" + filename + "' created successfully with size " + m.formattedSize());
+        System.out.println("File '" + Colors.c(Colors.WHITE, filename) + "' "
+            + Colors.c(Colors.GREEN, "created successfully")
+            + " with size " + Colors.c(Colors.CYAN, m.formattedSize()));
         exportState();
     }
 
     /** Deletes a file from list/map/heap and removes it from disk. */
     public void deleteFile(String filename) {
         if (!currentDirectory.fileIndex.contains(filename)) {
-            System.out.println("File not found: " + filename);
+            System.out.println(Colors.c(Colors.RED, "File not found: " + filename));
             exportState();
             return;
         }
@@ -232,7 +240,8 @@ public class FileSystem {
         currentDirectory.files.remove(filename);
         currentDirectory.fileIndex.remove(filename);
         globalHeap.remove(filePath);
-        System.out.println("File '" + filename + "' deleted successfully.");
+        System.out.println("File '" + Colors.c(Colors.WHITE, filename) + "' "
+            + Colors.c(Colors.GREEN, "deleted successfully") + ".");
         exportState();
     }
 
@@ -240,7 +249,7 @@ public class FileSystem {
     public void renameFile(String oldName, String newName) {
         models.FileMetadata oldMetadata = currentDirectory.fileIndex.get(oldName);
         if (oldMetadata == null) {
-            System.out.println("File not found: " + oldName);
+            System.out.println(Colors.c(Colors.RED, "File not found: " + oldName));
             exportState();
             return;
         }
@@ -249,7 +258,7 @@ public class FileSystem {
         String newPath = currentDirectory.absolutePath + File.separator + newName;
         boolean renamed = new File(oldPath).renameTo(new File(newPath));
         if (!renamed) {
-            System.out.println("Failed to rename file: " + oldName);
+            System.out.println(Colors.c(Colors.RED, "Failed to rename file: " + oldName));
             exportState();
             return;
         }
@@ -275,26 +284,32 @@ public class FileSystem {
         boolean hasFiles = !files.isEmpty();
 
         if (!hasDirectories && !hasFiles) {
-            System.out.println("(empty directory)");
+            System.out.println(Colors.c(Colors.RED, "(empty directory)"));
             exportState();
             return;
         }
 
         if (hasDirectories) {
             for (models.FileNode child : currentDirectory.children) {
-                System.out.println(child.name + "/");
+                System.out.println(Colors.c(Colors.BLUE + Colors.BOLD, child.name + "/"));
             }
         }
 
         if (hasFiles) {
             if (detailed) {
-                System.out.println("NAME                         SIZE       TYPE     MODIFIED");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                System.out.println(Colors.c(Colors.GRAY, "NAME                         SIZE       TYPE     MODIFIED"));
                 for (models.FileMetadata m : files) {
-                    System.out.println(m.toString());
+                    String row = String.format("%-28s %-10s %-8s %s",
+                            m.filename,
+                            Colors.c(Colors.CYAN, m.formattedSize()),
+                            m.type,
+                            m.modifiedAt.format(formatter));
+                    System.out.println(row);
                 }
             } else {
                 for (models.FileMetadata m : files) {
-                    System.out.println(m.filename);
+                    System.out.println(Colors.c(Colors.WHITE, m.filename));
                 }
             }
         }
@@ -305,16 +320,16 @@ public class FileSystem {
     public void info(String filename) {
         models.FileMetadata m = currentDirectory.fileIndex.get(filename);
         if (m == null) {
-            System.out.println("File not found");
+            System.out.println(Colors.c(Colors.RED, "File not found"));
             exportState();
             return;
         }
 
-        System.out.println("Filename: " + m.filename);
-        System.out.println("Size: " + m.sizeBytes + " bytes");
-        System.out.println("Type: " + m.type);
-        System.out.println("CreatedAt: " + m.createdAt);
-        System.out.println("ModifiedAt: " + m.modifiedAt);
+        System.out.println(Colors.c(Colors.GRAY, "Filename: ") + Colors.c(Colors.WHITE, m.filename));
+        System.out.println(Colors.c(Colors.GRAY, "Size: ") + Colors.c(Colors.WHITE, m.sizeBytes + " bytes"));
+        System.out.println(Colors.c(Colors.GRAY, "Type: ") + Colors.c(Colors.WHITE, m.type));
+        System.out.println(Colors.c(Colors.GRAY, "CreatedAt: ") + Colors.c(Colors.WHITE, String.valueOf(m.createdAt)));
+        System.out.println(Colors.c(Colors.GRAY, "ModifiedAt: ") + Colors.c(Colors.WHITE, String.valueOf(m.modifiedAt)));
         exportState();
     }
 
@@ -324,10 +339,10 @@ public class FileSystem {
         findHelper(tree.getRoot(), filename, results);
 
         if (results.isEmpty()) {
-            System.out.println("No file named '" + filename + "' found");
+            System.out.println(Colors.c(Colors.RED, "No file named '" + filename + "' found"));
         } else {
             for (String path : results) {
-                System.out.println(path);
+                System.out.println(Colors.c(Colors.CYAN, path));
             }
         }
         exportState();
@@ -339,7 +354,7 @@ public class FileSystem {
         collectByType(tree.getRoot(), type, results);
 
         if (results.isEmpty()) {
-            System.out.println("No files of type '." + type + "' found");
+            System.out.println(Colors.c(Colors.RED, "No files of type '." + type + "' found"));
         } else {
             for (String line : results) {
                 System.out.println(line);
@@ -368,7 +383,7 @@ public class FileSystem {
 
         models.FileNode node = this.tree.findNode(absolute);
         if (node == null) {
-            System.out.println("Directory not found: " + path);
+            System.out.println(Colors.c(Colors.RED, "Directory not found: " + path));
         } else {
             this.tree.printTree(node, "", true);
         }
@@ -393,7 +408,7 @@ public class FileSystem {
             absolute = absolute.replace("/", File.separator).replace("\\", File.separator);
             models.FileNode node = tree.findNode(absolute);
             if (node == null) {
-                System.out.println("Directory not found: " + path);
+                System.out.println(Colors.c(Colors.RED, "Directory not found: " + path));
                 exportState();
                 return;
             }
@@ -404,14 +419,17 @@ public class FileSystem {
         }
 
         if (results.isEmpty()) {
-            System.out.println("No files found");
+            System.out.println(Colors.c(Colors.RED, "No files found"));
             exportState();
             return;
         }
 
         for (int i = 0; i < results.size(); i++) {
             datastructures.FileHeap.HeapEntry entry = results.get(i);
-            System.out.println((i + 1) + ". " + entry.filename + " — " + formatSize(entry.sizeBytes) + " — " + entry.absolutePath);
+            String rank = Colors.c(Colors.YELLOW, (i + 1) + ".");
+            String file = Colors.c(Colors.WHITE, entry.filename);
+            String size = Colors.c(Colors.CYAN, formatSize(entry.sizeBytes));
+            System.out.println(rank + " " + file + " — " + size + " — " + entry.absolutePath);
         }
         exportState();
     }
@@ -466,5 +484,23 @@ public class FileSystem {
     /** Exports the current root, active directory, and global heap state to state.json. */
     public void exportState() {
         exporter.export(tree.getRoot(), currentDirectory, globalHeap);
+        if (AuthManager.isLoggedIn()) {
+            try {
+                String stateContent = new String(
+                        java.nio.file.Files.readAllBytes(
+                                java.nio.file.Paths.get(
+                                        System.getProperty("user.dir") + java.io.File.separator + "state.json"
+                                )
+                        )
+                );
+                FirestoreSync.push(
+                        AuthManager.getUserEmail(),
+                        AuthManager.getDeviceId(),
+                        stateContent
+                );
+            } catch (Exception e) {
+                // silent fail — never crash CLI on sync error
+            }
+        }
     }
 }

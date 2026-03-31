@@ -2,6 +2,7 @@ package datastructures;
 
 import java.util.LinkedList;
 import models.FileNode;
+import utils.Colors;
 
 /**
  * Manages directory hierarchy operations over a FileNode tree.
@@ -79,9 +80,11 @@ public class DirectoryTree {
         }
 
         if (node.parent == null && "".equals(prefix)) {
-            System.out.println("/");
+            System.out.println(Colors.c(Colors.BLUE + Colors.BOLD, "/"));
         } else {
-            System.out.println(prefix + (isLast ? "└── " : "├── ") + node.name + "/");
+            System.out.println(prefix.replace("│", Colors.c(Colors.GRAY, "│"))
+                    + Colors.c(Colors.GRAY, isLast ? "└── " : "├── ")
+                    + Colors.c(Colors.BLUE + Colors.BOLD, node.name + "/"));
         }
 
         String childPrefix = prefix + (isLast ? "    " : "│   ");
@@ -100,7 +103,9 @@ public class DirectoryTree {
         if (node.files != null) {
             for (int i = 0; i < fileCount; i++) {
                 boolean fileIsLast = i == fileCount - 1;
-                System.out.println(childPrefix + (fileIsLast ? "└── " : "├── ") + node.files.getAll().get(i).filename);
+                System.out.println(childPrefix.replace("│", Colors.c(Colors.GRAY, "│"))
+                        + Colors.c(Colors.GRAY, fileIsLast ? "└── " : "├── ")
+                        + Colors.c(Colors.WHITE, node.files.getAll().get(i).filename));
             }
         }
     }
