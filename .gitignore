@@ -13,6 +13,18 @@ serviceAccount.json
 out/
 *.class
 
+# Temp/test directories
+.tmp-home/
+.tmp-home-test/
+auth-ui/
+
+# OAuth secrets
+oauth.properties
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
 # IDE/editor folders
 .idea/
 .vscode/

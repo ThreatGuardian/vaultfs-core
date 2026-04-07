@@ -1,0 +1,538 @@
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 24px;
+}
+
+/* ─── Logo ─── */
+.logo-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadeDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.logo-mark svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ─── Heading ─── */
+.heading {
+  text-align: center;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: fadeDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.heading h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  color: var(--white);
+}
+
+.heading p {
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+/* ─── Auth Card ─── */
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  opacity: 0;
+  animation: fadeDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+}
+
+/* ─── Buttons ─── */
+.auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: -0.2px;
+}
+
+.btn-google {
+  background: var(--white);
+  color: var(--black);
+  margin-bottom: 14px;
+}
+
+.btn-google:hover {
+  background: var(--gray-200);
+  transform: scale(1.015);
+}
+
+.btn-google:active {
+  transform: scale(0.985);
+  background: var(--gray-300);
+}
+
+.btn-github {
+  background: transparent;
+  color: var(--white);
+  border: 1.5px solid var(--gray-700);
+  margin-bottom: 14px;
+}
+
+.btn-github:hover {
+  border-color: var(--gray-500);
+  background: rgba(255, 255, 255, 0.04);
+  transform: scale(1.015);
+}
+
+.btn-github:active {
+  transform: scale(0.985);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Divider ─── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--gray-800);
+}
+
+.divider span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Guest Link ─── */
+.guest-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--gray-500);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s ease;
+  letter-spacing: -0.1px;
+}
+
+.guest-link:hover {
+  color: var(--white);
+}
+
+/* ─── Back Button ─── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 32px;
+  transition: color 0.2s ease;
+}
+
+.back-btn:hover {
+  color: var(--white);
+}
+
+.back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Section heading for flows ─── */
+.flow-heading {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.flow-heading h2 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+  color: var(--white);
+}
+
+.flow-heading p {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+/* ─── Provider Badge ─── */
+.provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: var(--gray-900);
+  border: 1px solid var(--gray-800);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-400);
+  margin-bottom: 20px;
+}
+
+.provider-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ─── Text Input ─── */
+.text-input {
+  width: 100%;
+  height: 56px;
+  padding: 0 20px;
+  border-radius: 14px;
+  border: 1.5px solid var(--gray-800);
+  background: var(--gray-900);
+  color: var(--white);
+  font-size: 17px;
+  font-family: inherit;
+  font-weight: 400;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  margin-bottom: 20px;
+}
+
+.text-input::placeholder {
+  color: var(--gray-600);
+}
+
+.text-input:focus {
+  border-color: var(--gray-500);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Submit Button ─── */
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: var(--white);
+  color: var(--black);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.2px;
+}
+
+.submit-btn:hover {
+  background: var(--gray-200);
+  transform: scale(1.015);
+}
+
+.submit-btn:active {
+  transform: scale(0.985);
+  background: var(--gray-300);
+}
+
+.submit-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Google Account Picker ─── */
+.account-list {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.account-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1.5px solid var(--gray-800);
+  background: var(--gray-900);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+  color: var(--white);
+}
+
+.account-item:hover {
+  border-color: var(--gray-600);
+  background: rgba(255, 255, 255, 0.04);
+  transform: scale(1.01);
+}
+
+.account-item:active {
+  transform: scale(0.99);
+}
+
+.account-item.selected {
+  border-color: var(--white);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gray-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--white);
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.account-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--white);
+  margin-bottom: 2px;
+}
+
+.account-email {
+  font-size: 14px;
+  color: var(--gray-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Add Account ─── */
+.add-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1.5px dashed var(--gray-800);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  color: var(--gray-500);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.add-account-btn:hover {
+  border-color: var(--gray-600);
+  color: var(--white);
+}
+
+.add-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── GitHub Form ─── */
+.github-form {
+  width: 100%;
+  max-width: 400px;
+}
+
+.github-form .input-group {
+  margin-bottom: 16px;
+}
+
+.github-form .input-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+  letter-spacing: 0.1px;
+}
+
+/* ─── Loading Overlay ─── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--black);
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.loading-overlay.active {
+  display: flex;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--gray-800);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+/* ─── Success View ─── */
+.success-container {
+  text-align: center;
+  opacity: 0;
+  animation: fadeDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.check-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+  opacity: 0;
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+}
+
+.check-ring svg {
+  width: 32px;
+  height: 32px;
+  opacity: 0;
+  animation: fadeDown 0.4s ease 0.6s forwards;
+}
+
+.success-container h1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+
+.success-container p {
+  font-size: 17px;
+  color: var(--gray-500);
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+.success-hint {
+  margin-top: 40px;
+  font-size: 13px;
+  color: var(--gray-700);
+  letter-spacing: 0.2px;
+}
+
+/* ─── Footer ─── */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--gray-700);
+  letter-spacing: 0.2px;
+}
+
+/* ─── Animate-in wrapper ─── */
+.animate-in {
+  opacity: 0;
+  animation: fadeDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-in-d1 { animation-delay: 0.1s; }
+.animate-in-d2 { animation-delay: 0.2s; }
+.animate-in-d3 { animation-delay: 0.35s; }
+
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+  .heading h1 { font-size: 26px; }
+  .auth-btn { height: 52px; font-size: 16px; }
+  .text-input, .submit-btn { height: 52px; font-size: 16px; }
+  .account-item { padding: 14px 16px; }
+}
