@@ -1,17 +1,32 @@
 import { useState } from 'react'
 import MainView from './components/MainView'
 import LoadingOverlay from './components/LoadingOverlay'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from './firebase'
 
 export default function App() {
   const [loadingText, setLoadingText] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleGoogle = () => {
-    setLoadingText('Redirecting to Google...')
-    setLoading(true)
-    setTimeout(() => {
-      window.location.href = '/auth/google'
-    }, 400)
+  const handleGoogle = async () => {
+    try {
+      setLoadingText('Opening Google sign-in...')
+      setLoading(true)
+
+      const result = await signInWithPopup(auth, googleProvider)
+      const user = result.user
+
+      // Keep existing backend flow by finishing login through local callback.
+      if (user) {
+        window.location.href = '/callback'
+        return
+      }
+
+      setLoading(false)
+    } catch (err) {
+      setLoadingText('Google sign-in failed. Try again.')
+      setTimeout(() => setLoading(false), 1200)
+    }
   }
 
   const handleGitHub = () => {

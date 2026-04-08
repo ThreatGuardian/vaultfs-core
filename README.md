@@ -55,19 +55,73 @@ file-system-simulator/
 
 ## ⚙️ Build & Run
 
-**Requirements:** Java 11+
+**Requirements:**
+- Java 11+
+- Node.js 18+ and npm
 
-```bash
+```powershell
 # Clone the repo
-git clone https://github.com/pranavdadhe1806/file-system-simulator.git
-cd file-system-simulator
+git clone https://github.com/pranavdadhe1806/File-System-Manager-Java.git
+cd File-System-Manager-Java
 
-# Compile
-javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/filesystem/*.java src/Main.java
+# Compile backend (PowerShell)
+if (Test-Path out) { Remove-Item -Recurse -Force out }
+New-Item -ItemType Directory out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { $_.FullName })
 
-# Run
+# Run backend CLI
+java -cp out Main
+
+# Try a quick demo in the CLI to see output
+mkdir demo
+cd demo
+create notes.txt 1024
+ls -l
+tree
+exit
+```
+
+### Frontend (React + Vite)
+
+```powershell
+# From project root
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+### Full Local Setup (Backend + Frontend)
+
+Use two terminals from the project root.
+
+**Terminal 1 (Backend CLI):**
+
+```powershell
+if (Test-Path out) { Remove-Item -Recurse -Force out }
+New-Item -ItemType Directory out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { $_.FullName })
 java -cp out Main
 ```
+
+**Terminal 2 (Frontend UI):**
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open the URL printed by Vite (usually `http://localhost:5173`).
 
 <br/>
 
@@ -218,13 +272,7 @@ After every command, the simulator exports a `state.json` snapshot:
 }
 ```
 
-This is consumed by the **React frontend** (separate repo) to visualize the Tree, Heap, and HashMap in real time.
-
-<br/>
-
-## 🔗 Related
-
-- **Frontend Visualization Repo** — React app that reads `state.json` and renders interactive DS visualizations *(coming soon)*
+This is consumed by the **React frontend** in `frontend/` to visualize the Tree, Heap, and HashMap in real time.
 
 <br/>
 
