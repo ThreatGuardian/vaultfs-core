@@ -38,12 +38,78 @@ cd ..
 ```bash
 # Compile
 javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/auth/*.java src/sync/*.java src/filesystem/*.java src/Main.java
+**Requirements:**
+- Java 11+
+- Node.js 18+ and npm
 
-# Run
+```powershell
+# Clone the repo
+git clone https://github.com/pranavdadhe1806/File-System-Manager-Java.git
+cd File-System-Manager-Java
+
+# Compile backend (PowerShell)
+if (Test-Path out) { Remove-Item -Recurse -Force out }
+New-Item -ItemType Directory out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { $_.FullName })
+
+# Run backend CLI
+java -cp out Main
+
+# Try a quick demo in the CLI to see output
+mkdir demo
+cd demo
+create notes.txt 1024
+ls -l
+tree
+exit
+```
+
+### Frontend (React + Vite)
+
+```powershell
+# From project root
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+### Full Local Setup (Backend + Frontend)
+
+Use two terminals from the project root.
+
+**Terminal 1 (Backend CLI):**
+
+```powershell
+if (Test-Path out) { Remove-Item -Recurse -Force out }
+New-Item -ItemType Directory out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { $_.FullName })
 java -cp out Main
 ```
 
+**Terminal 2 (Frontend UI):**
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
 The app will open a browser for login. Choose **Google**, **GitHub**, or **Continue as Guest**.
+Open the URL printed by Vite (usually `http://localhost:5173`).
+
+<br/>
+
+## 💻 Commands
 
 ---
 
@@ -196,6 +262,7 @@ vaultfs-core/
 ├── FEATURE_SPEC.md                  # Data structure feature specifications
 └── README.md
 ```
+This is consumed by the **React frontend** in `frontend/` to visualize the Tree, Heap, and HashMap in real time.
 
 ---
 
