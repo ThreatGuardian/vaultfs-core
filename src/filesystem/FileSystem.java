@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.Stack;
 import sync.FirestoreSync;
 import utils.Colors;
+import utils.Logger;
 
 /**
  * Core engine that connects data structures and sandbox disk operations.
@@ -26,6 +27,9 @@ public class FileSystem {
     private datastructures.DirectoryTree tree;
     private datastructures.FileHeap globalHeap;
     private datastructures.DiskSimulator diskSimulator;
+    private DiskService diskService;
+    private SearchService searchService;
+    private Map<String, Integer> fileBlockIndex;
     public models.FileNode currentDirectory;
     private utils.JsonExporter exporter;
     private Stack<String> historyStack;
@@ -36,12 +40,13 @@ public class FileSystem {
         this.tree = new datastructures.DirectoryTree(startPath);
         this.globalHeap = new datastructures.FileHeap();
         this.diskSimulator = new datastructures.DiskSimulator();
+        this.diskService = new DiskService();
+        this.searchService = new SearchService();
+        this.fileBlockIndex = new HashMap<>();
         this.currentDirectory = this.tree.getRoot();
         this.exporter = new utils.JsonExporter(System.getProperty("user.dir") + File.separator + "state.json");
         this.historyStack = new Stack<>();
-        syncDirectoryFromDisk(this.currentDirectory, false);
-        rebuildGlobalHeapFromRoot();
-        exportState();
+        refreshState();
     }
 
     /** Returns the current directory path for prompt display. */
@@ -63,14 +68,14 @@ public class FileSystem {
                 exportState();
                 return;
             }
-            String prevPath = historyStack.pop();
+            String prevPath = historyStack.peek();
             File targetDir = resolveDirectory(prevPath);
             if (targetDir != null) {
                 models.FileNode resolved = ensureNodeForDirectory(targetDir);
                 if (resolved != null) {
+                    historyStack.pop();
                     currentDirectory = resolved;
-                    syncDirectoryFromDisk(currentDirectory, false);
-                    rebuildGlobalHeapFromRoot();
+                    refreshTreeAndHeap();
                 }
             }
             exportState();
@@ -95,8 +100,7 @@ public class FileSystem {
         historyStack.push(currentDirectory.absolutePath);
 
         currentDirectory = resolved;
-        syncDirectoryFromDisk(currentDirectory, false);
-        rebuildGlobalHeapFromRoot();
+        refreshTreeAndHeap();
         exportState();
     }
 
@@ -131,8 +135,7 @@ public class FileSystem {
         }
 
         tree.insertDirectory(currentDirectory, name, absolutePath);
-        syncDirectoryFromDisk(currentDirectory, false);
-    rebuildGlobalHeapFromRoot();
+        refreshTreeAndHeap();
         System.out.println("Directory '" + Colors.c(Colors.BLUE, name) + "' "
                 + Colors.c(Colors.GREEN, "created successfully") + ".");
         exportState();
@@ -168,7 +171,7 @@ public class FileSystem {
 
         boolean deleted;
         if (force) {
-            deleted = deleteDiskRecursive(targetDir);
+            deleted = diskService.deleteDiskRecursive(targetDir);
         } else {
             deleted = targetDir.delete();
         }
@@ -181,30 +184,10 @@ public class FileSystem {
 
         removeHeapEntriesUnderNode(node);
         tree.removeDirectory(node);
-        syncDirectoryFromDisk(currentDirectory, false);
-        rebuildGlobalHeapFromRoot();
+        refreshTreeAndHeap();
         System.out.println("Directory '" + Colors.c(Colors.BLUE, name) + "' "
             + Colors.c(Colors.GREEN, "removed successfully") + ".");
         exportState();
-    }
-
-    /** Recursively deletes a file or directory from disk and returns full success. */
-    private boolean deleteDiskRecursive(File f) {
-        boolean success = true;
-        if (f.isDirectory()) {
-            File[] children = f.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    if (!deleteDiskRecursive(child)) {
-                        success = false;
-                    }
-                }
-            }
-        }
-        if (!f.delete()) {
-            success = false;
-        }
-        return success;
     }
 
     /** Renames a child directory in memory and on disk. */
@@ -247,8 +230,7 @@ public class FileSystem {
 
         node.name = newName;
         updateNodePathRecursively(node, newPath);
-        syncDirectoryFromDisk(currentDirectory, false);
-        rebuildGlobalHeapFromRoot();
+        refreshTreeAndHeap();
         System.out.println("Directory renamed successfully.");
         exportState();
     }
@@ -290,9 +272,11 @@ public class FileSystem {
             return;
         }
 
-        models.FileMetadata m = metadataFromDiskFile(diskFile);
+        models.FileMetadata m = diskService.metadataFromDiskFile(diskFile, diskSimulator, -1);
         currentDirectory.files.add(m);
         currentDirectory.fileIndex.put(filename, m);
+        tree.trackFile(filename, filePath);
+        fileBlockIndex.put(filePath, m.startBlockId);
         globalHeap.insert(filename, filePath, m.sizeBytes);
         
         System.out.println("File '" + Colors.c(Colors.WHITE, filename) + "' "
@@ -339,6 +323,8 @@ public class FileSystem {
 
         currentDirectory.files.remove(filename);
         currentDirectory.fileIndex.remove(filename);
+        tree.untrackFile(filename, filePath);
+        fileBlockIndex.remove(filePath);
         globalHeap.remove(filePath);
         System.out.println("File '" + Colors.c(Colors.WHITE, filename) + "' "
             + Colors.c(Colors.GREEN, "deleted successfully") + ".");
@@ -393,10 +379,20 @@ public class FileSystem {
         currentDirectory.files.remove(oldName);
         currentDirectory.fileIndex.remove(oldName);
 
-        models.FileMetadata newMetadata = metadataFromDiskFile(newDiskFile);
+        tree.untrackFile(oldName, oldPath);
+        Integer existingBlockId = fileBlockIndex.remove(oldPath);
+
+        models.FileMetadata newMetadata = diskService.metadataFromDiskFile(
+            newDiskFile,
+            diskSimulator,
+            existingBlockId != null ? existingBlockId : -1
+        );
         newMetadata.createdAt = oldMetadata.createdAt;
         currentDirectory.files.add(newMetadata);
         currentDirectory.fileIndex.put(newName, newMetadata);
+
+        tree.trackFile(newName, newPath);
+        fileBlockIndex.put(newPath, newMetadata.startBlockId);
 
         globalHeap.remove(oldPath);
         globalHeap.insert(newName, newPath, newMetadata.sizeBytes);
@@ -516,7 +512,7 @@ public class FileSystem {
         syncDirectoryFromDisk(currentDirectory, true);
 
         List<String> results = new ArrayList<>();
-        collectByType(currentDirectory, type, results);
+        searchService.collectByType(currentDirectory, type, results);
 
         if (results.isEmpty()) {
             System.out.println(Colors.c(Colors.RED, "No files of type '." + type + "' found"));
@@ -576,7 +572,7 @@ public class FileSystem {
             }
 
             datastructures.FileHeap tempHeap = new datastructures.FileHeap();
-            populateHeapFromDisk(targetDir, tempHeap);
+            diskService.populateHeapFromDisk(targetDir, tempHeap);
             results = tempHeap.topK(k);
         }
 
@@ -590,7 +586,7 @@ public class FileSystem {
             datastructures.FileHeap.HeapEntry entry = results.get(i);
             String rank = Colors.c(Colors.YELLOW, (i + 1) + ".");
             String file = Colors.c(Colors.WHITE, entry.filename);
-            String size = Colors.c(Colors.CYAN, formatSize(entry.sizeBytes));
+            String size = Colors.c(Colors.CYAN, searchService.formatSize(entry.sizeBytes));
             System.out.println(rank + " " + file + " — " + size + " — " + entry.absolutePath);
         }
         exportState();
@@ -629,9 +625,9 @@ public class FileSystem {
 
     /** Ensures a directory path exists in memory tree, resetting root when needed. */
     private models.FileNode ensureNodeForDirectory(File directory) {
-        String targetPath = normalizePath(directory.getAbsolutePath());
+        String targetPath = diskService.normalizePath(directory.getAbsolutePath());
         models.FileNode rootNode = tree.getRoot();
-        String rootPath = normalizePath(rootNode.absolutePath);
+        String rootPath = diskService.normalizePath(rootNode.absolutePath);
 
         if (!isSameOrDescendant(rootPath, targetPath)) {
             this.tree = new datastructures.DirectoryTree(targetPath);
@@ -673,7 +669,7 @@ public class FileSystem {
             syncDirectoryFromDisk(walker, false);
             models.FileNode child = walker.getChild(childName);
             if (child == null) {
-                String childPath = normalizePath(new File(walker.absolutePath, childName).getAbsolutePath());
+                String childPath = diskService.normalizePath(new File(walker.absolutePath, childName).getAbsolutePath());
                 File childDir = new File(childPath);
                 if (!childDir.exists() || !childDir.isDirectory()) {
                     return null;
@@ -709,6 +705,7 @@ public class FileSystem {
         }
 
         Set<String> diskDirectoryNames = new HashSet<>();
+        Set<String> diskFilePaths = new HashSet<>();
         ArrayList<models.FileMetadata> diskFiles = new ArrayList<>();
 
         for (File entry : entries) {
@@ -716,7 +713,7 @@ public class FileSystem {
                 String childName = entry.getName();
                 diskDirectoryNames.add(childName);
                 models.FileNode child = existingChildren.get(childName);
-                String childPath = normalizePath(entry.getAbsolutePath());
+                String childPath = diskService.normalizePath(entry.getAbsolutePath());
                 if (child == null) {
                     child = tree.insertDirectory(node, childName, childPath);
                 } else {
@@ -728,7 +725,30 @@ public class FileSystem {
                     syncDirectoryFromDisk(child, true);
                 }
             } else if (entry.isFile()) {
-                diskFiles.add(metadataFromDiskFile(entry));
+                String filePath = diskService.normalizePath(entry.getAbsolutePath());
+                Integer existingBlockId = fileBlockIndex.get(filePath);
+                models.FileMetadata metadata = diskService.metadataFromDiskFile(
+                        entry,
+                        diskSimulator,
+                        existingBlockId != null ? existingBlockId : -1
+                );
+                diskFiles.add(metadata);
+                diskFilePaths.add(filePath);
+                fileBlockIndex.put(filePath, metadata.startBlockId);
+                tree.trackFile(metadata.filename, filePath);
+            }
+        }
+
+        if (node.files != null) {
+            for (models.FileMetadata existing : node.files.getAll()) {
+                String previousPath = diskService.normalizePath(node.absolutePath + File.separator + existing.filename);
+                if (!diskFilePaths.contains(previousPath)) {
+                    tree.untrackFile(existing.filename, previousPath);
+                    Integer blockId = fileBlockIndex.remove(previousPath);
+                    if (blockId != null && blockId >= 0) {
+                        diskSimulator.freeFile(blockId);
+                    }
+                }
             }
         }
 
@@ -747,21 +767,10 @@ public class FileSystem {
         }
     }
 
-    /** Creates metadata from actual disk size and modified timestamp. */
-    private models.FileMetadata metadataFromDiskFile(File file) {
-        models.FileMetadata metadata = new models.FileMetadata(file.getName(), file.length());
-        LocalDateTime modified = LocalDateTime.ofInstant(Instant.ofEpochMilli(file.lastModified()), ZoneId.systemDefault());
-        metadata.modifiedAt = modified;
-        if (metadata.startBlockId == -1) {
-            metadata.startBlockId = diskSimulator.allocateFile(metadata.sizeBytes);
-        }
-        return metadata;
-    }
-
     /** Recursively updates absolute paths after a directory rename. */
     private void updateNodePathRecursively(models.FileNode node, String newAbsolutePath) {
         String oldPath = node.absolutePath;
-        node.absolutePath = normalizePath(newAbsolutePath);
+        node.absolutePath = diskService.normalizePath(newAbsolutePath);
 
         for (models.FileNode child : node.children) {
             String childNewPath = child.absolutePath.replace(oldPath, node.absolutePath);
@@ -774,6 +783,12 @@ public class FileSystem {
         for (models.FileMetadata metadata : node.files.getAll()) {
             String absolutePath = node.absolutePath + File.separator + metadata.filename;
             globalHeap.remove(absolutePath);
+            tree.untrackFile(metadata.filename, absolutePath);
+
+            Integer blockId = fileBlockIndex.remove(absolutePath);
+            if (blockId != null && blockId >= 0) {
+                diskSimulator.freeFile(blockId);
+            }
         }
 
         for (models.FileNode child : node.children) {
@@ -781,43 +796,30 @@ public class FileSystem {
         }
     }
 
+    /** Refreshes current directory tree view and global heap snapshot from disk. */
+    private void refreshTreeAndHeap() {
+        syncDirectoryFromDisk(currentDirectory, false);
+        rebuildGlobalHeapFromRoot();
+    }
+
+    /** Refreshes memory structures and persists state for UI/sync consumers. */
+    private void refreshState() {
+        refreshTreeAndHeap();
+        exportState();
+    }
+
     /** Rebuilds the global heap from all files currently reachable from the tree root path. */
     private void rebuildGlobalHeapFromRoot() {
         this.globalHeap = new datastructures.FileHeap();
-        populateHeapFromDisk(new File(tree.getRoot().absolutePath), this.globalHeap);
-    }
-
-    /** Recursively inserts file metadata from disk into a heap. */
-    private void populateHeapFromDisk(File directory, datastructures.FileHeap heap) {
-        if (directory == null || !directory.exists() || !directory.isDirectory()) {
-            return;
-        }
-
-        File[] children = directory.listFiles();
-        if (children == null) {
-            return;
-        }
-
-        for (File child : children) {
-            if (child.isFile()) {
-                heap.insert(child.getName(), normalizePath(child.getAbsolutePath()), child.length());
-            } else if (child.isDirectory()) {
-                populateHeapFromDisk(child, heap);
-            }
-        }
+        diskService.populateHeapFromDisk(new File(tree.getRoot().absolutePath), this.globalHeap);
     }
 
     /** Returns true if root and target are equal or target is a descendant path of root. */
     private boolean isSameOrDescendant(String rootPath, String targetPath) {
-        String normalizedRoot = normalizePath(rootPath).toLowerCase();
-        String normalizedTarget = normalizePath(targetPath).toLowerCase();
+        String normalizedRoot = diskService.normalizePath(rootPath).toLowerCase();
+        String normalizedTarget = diskService.normalizePath(targetPath).toLowerCase();
         return normalizedTarget.equals(normalizedRoot)
                 || normalizedTarget.startsWith(normalizedRoot + File.separator.toLowerCase());
-    }
-
-    /** Normalizes a path into absolute canonical-like form without resolving symlinks. */
-    private String normalizePath(String path) {
-        return new File(path).getAbsoluteFile().toPath().normalize().toString();
     }
 
     /** Allows plain names only so commands operate within current directory scope. */
@@ -826,41 +828,6 @@ public class FileSystem {
             return false;
         }
         return !(name.contains("/") || name.contains("\\"));
-    }
-
-    /** Finds matching filenames recursively and appends full absolute file paths to results. */
-    private void findHelper(models.FileNode node, String filename, List<String> results) {
-        if (node.files.contains(filename)) {
-            results.add(node.absolutePath + File.separator + filename);
-        }
-
-        for (models.FileNode child : node.children) {
-            findHelper(child, filename, results);
-        }
-    }
-
-    /** Collects formatted results for files whose metadata type matches the input type. */
-    private void collectByType(models.FileNode node, String type, List<String> results) {
-        for (models.FileMetadata m : node.files.getAll()) {
-            if (m.type.equals(type)) {
-                results.add(node.absolutePath + File.separator + m.filename + " — " + m.formattedSize());
-            }
-        }
-
-        for (models.FileNode child : node.children) {
-            collectByType(child, type, results);
-        }
-    }
-
-    /** Formats bytes as B, KB, or MB text for top-k output. */
-    private String formatSize(long sizeBytes) {
-        if (sizeBytes < 1024) {
-            return sizeBytes + " B";
-        }
-        if (sizeBytes < 1_048_576) {
-            return String.format("%.1f KB", sizeBytes / 1024.0);
-        }
-        return String.format("%.1f MB", sizeBytes / 1_048_576.0);
     }
 
     /** Creates a symbolic link (shortcut) to another directory and checks for cycles. */
@@ -880,11 +847,11 @@ public class FileSystem {
 
         // Feature 4: Cycle Detection using HashSet
         HashSet<String> visited = new HashSet<>();
-        visited.add(normalizePath(targetDir.getAbsolutePath()));
+        visited.add(diskService.normalizePath(targetDir.getAbsolutePath()));
         
         models.FileNode walker = currentDirectory;
         while (walker != null) {
-            if (visited.contains(normalizePath(walker.absolutePath))) {
+            if (visited.contains(diskService.normalizePath(walker.absolutePath))) {
                 System.out.println(Colors.c(Colors.RED, "Error: Creating this symlink would cause a circular reference cycle."));
                 exportState();
                 return;
@@ -897,11 +864,17 @@ public class FileSystem {
             java.nio.file.Files.createSymbolicLink(link, targetDir.toPath());
             
             // Register it in the tree
-            tree.insertDirectory(currentDirectory, linkName, normalizePath(link.toString()));
+            tree.insertDirectory(currentDirectory, linkName, diskService.normalizePath(link.toString()));
             syncDirectoryFromDisk(currentDirectory, false);
             
             System.out.println("Symlink '" + Colors.c(Colors.BLUE, linkName) + "' "
                 + Colors.c(Colors.GREEN, "created successfully") + " -> " + targetPath);
+        } catch (UnsupportedOperationException e) {
+            System.out.println(Colors.c(Colors.RED,
+                    "Failed to create symlink: symbolic links are not supported on this platform or filesystem."));
+        } catch (SecurityException e) {
+            System.out.println(Colors.c(Colors.RED,
+                    "Failed to create symlink: insufficient permissions to create symbolic links."));
         } catch (IOException e) {
             System.out.println(Colors.c(Colors.RED, "Failed to create symlink: " + e.getMessage()));
         }
@@ -926,7 +899,7 @@ public class FileSystem {
                         stateContent
                 );
             } catch (Exception e) {
-                // silent fail — never crash CLI on sync error
+                Logger.debug("Cloud sync skipped due to error: " + e.getMessage());
             }
         }
     }

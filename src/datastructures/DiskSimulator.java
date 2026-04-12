@@ -2,6 +2,7 @@ package datastructures;
 
 import java.util.ArrayList;
 import java.util.List;
+import utils.Logger;
 
 /**
  * Simulates a disk block storage system where a file is fragmented across multiple blocks.
@@ -43,7 +44,7 @@ public class DiskSimulator {
         if (requiredBlocks == 0) requiredBlocks = 1; // Minimum 1 block
 
         if (requiredBlocks > freeBlocks) {
-            System.out.println("DiskSimulator Error: Not enough free blocks. Required: " + requiredBlocks + ", Available: " + freeBlocks);
+            Logger.warn("DiskSimulator Error: Not enough free blocks. Required: " + requiredBlocks + ", Available: " + freeBlocks);
             return -1;
         }
 

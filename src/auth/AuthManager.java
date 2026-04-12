@@ -36,6 +36,12 @@ public class AuthManager {
     private static final String NAME_FILE = TOKEN_DIR + "/name";
 
     private static final String CONFIG_FILE = TOKEN_DIR + "/config";
+    private static final String WHOAMI_TITLE = "Account Details";
+    private static final String WHOAMI_EMAIL_LABEL = "Email";
+    private static final String WHOAMI_DEVICE_LABEL = "Device ID";
+    private static final String WHOAMI_STATUS_LABEL = "Status";
+    private static final String WHOAMI_STATUS_VALUE = "● Online";
+    private static final int WHOAMI_MIN_WIDTH = 37;
 
 
 
@@ -369,43 +375,47 @@ public class AuthManager {
 
         String email = getUserEmail();
         String deviceId = getDeviceId();
-        
-        int emailLen = email.length();
-        int deviceIdLen = deviceId.length();
-        int maxLen = Math.max(emailLen, deviceIdLen);
-        int boxWidth = Math.max(37, maxLen + 18); // 18 is for "Email     : " and padding
+
+        int labelWidth = Math.max(
+            Math.max(WHOAMI_EMAIL_LABEL.length(), WHOAMI_DEVICE_LABEL.length()),
+            WHOAMI_STATUS_LABEL.length()
+        );
+        int valueWidth = Math.max(
+            Math.max(email.length(), deviceId.length()),
+            WHOAMI_STATUS_VALUE.length()
+        );
+        int contentWidth = 1 + labelWidth + 3 + valueWidth + 1;
+        int boxWidth = Math.max(WHOAMI_MIN_WIDTH, contentWidth);
         
         String borderTop = "┌" + "─".repeat(boxWidth) + "┐";
         String borderMid = "├" + "─".repeat(boxWidth) + "┤";
         String borderBottom = "└" + "─".repeat(boxWidth) + "┘";
 
         System.out.println(Colors.c(Colors.GRAY, borderTop));
-        
-        int titlePadLeft = (boxWidth - 15) / 2;
-        int titlePadRight = boxWidth - 15 - titlePadLeft;
-        System.out.println(Colors.c(Colors.GRAY, "│") + " ".repeat(titlePadLeft) + "Account Details" + " ".repeat(titlePadRight) + Colors.c(Colors.GRAY, "│"));
+
+        int titlePadLeft = (boxWidth - WHOAMI_TITLE.length()) / 2;
+        int titlePadRight = boxWidth - WHOAMI_TITLE.length() - titlePadLeft;
+        System.out.println(Colors.c(Colors.GRAY, "│") + " ".repeat(titlePadLeft) + WHOAMI_TITLE + " ".repeat(titlePadRight) + Colors.c(Colors.GRAY, "│"));
         
         System.out.println(Colors.c(Colors.GRAY, borderMid));
-        
-        int emailPad = boxWidth - 15 - emailLen;
-        System.out.println(Colors.c(Colors.GRAY, "│") + " "
-                + Colors.c(Colors.GRAY, "Email") + "     : "
-                + Colors.c(Colors.YELLOW, email)
-                + " ".repeat(Math.max(0, emailPad)) + Colors.c(Colors.GRAY, "│"));
-                
-        int devicePad = boxWidth - 15 - deviceIdLen;
-        System.out.println(Colors.c(Colors.GRAY, "│") + " "
-                + Colors.c(Colors.GRAY, "Device ID") + " : "
-                + Colors.c(Colors.CYAN, deviceId)
-                + " ".repeat(Math.max(0, devicePad)) + Colors.c(Colors.GRAY, "│"));
-                
-        int statusPad = boxWidth - 15 - 8; // 8 for "● Online"
-        System.out.println(Colors.c(Colors.GRAY, "│") + " "
-                + Colors.c(Colors.GRAY, "Status") + "    : "
-                + Colors.c(Colors.GREEN, "● Online")
-                + " ".repeat(Math.max(0, statusPad)) + Colors.c(Colors.GRAY, "│"));
+
+        printWhoamiRow(boxWidth, labelWidth, WHOAMI_EMAIL_LABEL, email, Colors.YELLOW);
+        printWhoamiRow(boxWidth, labelWidth, WHOAMI_DEVICE_LABEL, deviceId, Colors.CYAN);
+        printWhoamiRow(boxWidth, labelWidth, WHOAMI_STATUS_LABEL, WHOAMI_STATUS_VALUE, Colors.GREEN);
                 
         System.out.println(Colors.c(Colors.GRAY, borderBottom));
+    }
+
+    /** Prints one account detail row using dynamic label and value widths. */
+    private static void printWhoamiRow(int boxWidth, int labelWidth, String label, String value, String valueColor) {
+        String paddedLabel = String.format("%-" + labelWidth + "s", label);
+        int trailingPad = Math.max(0, boxWidth - (1 + labelWidth + 3 + value.length()));
+
+        System.out.println(Colors.c(Colors.GRAY, "│") + " "
+                + Colors.c(Colors.GRAY, paddedLabel) + " : "
+                + Colors.c(valueColor, value)
+                + " ".repeat(trailingPad)
+                + Colors.c(Colors.GRAY, "│"));
     }
 
 

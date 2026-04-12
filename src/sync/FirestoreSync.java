@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -48,7 +48,7 @@ public class FirestoreSync {
             body.append("}");
             body.append("}");
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(firestoreUrl).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) URI.create(firestoreUrl).toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
             conn.setRequestProperty("Authorization", "Bearer " + accessToken);
@@ -112,7 +112,7 @@ public class FirestoreSync {
             String signature = signRsa(signingInput, privateKey);
             String jwt = signingInput + "." + signature;
 
-            HttpURLConnection conn = (HttpURLConnection) new URL("https://oauth2.googleapis.com/token").openConnection();
+            HttpURLConnection conn = (HttpURLConnection) URI.create("https://oauth2.googleapis.com/token").toURL().openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
