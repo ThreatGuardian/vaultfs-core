@@ -91,35 +91,27 @@ try {
   }
   success("Source files copied");
 
+  // ─── Platform-aware commands ───────────────────────────────
+  const npmCmd = platform === "win32" ? "npm.cmd" : "npm";
+  const npxCmd = platform === "win32" ? "npx.cmd" : "npx";
+
   // ─── Build frontend ────────────────────────────────────────
   info("Installing frontend dependencies...");
   const frontendDir = path.join(installDir, "frontend");
-  execSync("npm install --silent", { cwd: frontendDir, stdio: "inherit" });
+  execSync(`${npmCmd} install`, { cwd: frontendDir, stdio: "inherit" });
   success("Dependencies installed");
 
   info("Building React app...");
-  execSync("npm run build --silent", { cwd: frontendDir, stdio: "inherit" });
+  execSync(`${npxCmd} vite build`, { cwd: frontendDir, stdio: "inherit" });
   success("Frontend built");
 
   // ─── Compile Java ──────────────────────────────────────────
   info("Compiling Java sources...");
-  const javacCmd = [
-    "javac", "-d", "out",
-    "src/models/*.java",
-    "src/datastructures/*.java",
-    "src/utils/*.java",
-    "src/auth/*.java",
-    "src/sync/*.java",
-    "src/filesystem/*.java",
-    "src/Main.java"
-  ].join(" ");
-
-  // On Windows, use cmd /c for glob expansion
-  if (platform === "win32") {
-    execSync(`cmd /c "${javacCmd.replace(/\//g, "\\")}"`, { cwd: installDir, stdio: "inherit" });
-  } else {
-    execSync(javacCmd, { cwd: installDir, stdio: "inherit", shell: true });
-  }
+  execSync("javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/auth/*.java src/sync/*.java src/filesystem/*.java src/Main.java", {
+    cwd: installDir,
+    stdio: "inherit",
+    shell: true
+  });
   success("All sources compiled");
 
   // ─── Done ──────────────────────────────────────────────────

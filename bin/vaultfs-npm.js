@@ -12,6 +12,8 @@ const GREEN = "\x1b[32m";
 const CYAN = "\x1b[36m";
 
 const installDir = path.join(os.homedir(), ".vaultfs");
+const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
 const versionFile = path.join(installDir, "version.txt");
 const args = process.argv.slice(2);
 const cmd = args[0];
@@ -43,16 +45,15 @@ if (cmd === "update") {
 
       // Rebuild frontend
       const frontendDir = path.join(installDir, "frontend");
-      execSync("npm install", { cwd: frontendDir, stdio: "inherit" });
-      execSync("npm run build", { cwd: frontendDir, stdio: "inherit" });
+      execSync(`${npmCmd} install`, { cwd: frontendDir, stdio: "inherit" });
+      execSync(`${npxCmd} vite build`, { cwd: frontendDir, stdio: "inherit" });
 
       // Recompile Java
-      const javacCmd = "javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/auth/*.java src/sync/*.java src/filesystem/*.java src/Main.java";
-      if (process.platform === "win32") {
-        execSync(`cmd /c "${javacCmd.replace(/\//g, "\\")}"`, { cwd: installDir, stdio: "inherit" });
-      } else {
-        execSync(javacCmd, { cwd: installDir, stdio: "inherit", shell: true });
-      }
+      execSync("javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/auth/*.java src/sync/*.java src/filesystem/*.java src/Main.java", {
+        cwd: installDir,
+        stdio: "inherit",
+        shell: true
+      });
 
       const ver = fs.readFileSync(versionFile, "utf8").trim();
       console.log(`✅ VaultFS updated to v${ver}!`);
