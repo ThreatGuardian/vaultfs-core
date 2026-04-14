@@ -98,12 +98,21 @@ try {
   // ─── Build frontend ────────────────────────────────────────
   info("Installing frontend dependencies...");
   const frontendDir = path.join(installDir, "frontend");
-  execSync(`${npmCmd} install`, { cwd: frontendDir, stdio: "inherit" });
+  execSync(`${npmCmd} install --prefer-offline`, {
+    cwd: frontendDir,
+    stdio: "inherit",
+    shell: true
+  });
   success("Dependencies installed");
 
   info("Building React app...");
-  execSync(`${npxCmd} vite build`, { cwd: frontendDir, stdio: "inherit" });
-  success("Frontend built");
+  const viteBin = path.join(frontendDir, "node_modules", ".bin", "vite");
+  execSync(`"${viteBin}" build`, {
+    cwd: frontendDir,
+    stdio: "inherit",
+    shell: true
+  });
+  success("React app built");
 
   // ─── Compile Java ──────────────────────────────────────────
   info("Compiling Java sources...");

@@ -45,8 +45,9 @@ if (cmd === "update") {
 
       // Rebuild frontend
       const frontendDir = path.join(installDir, "frontend");
-      execSync(`${npmCmd} install`, { cwd: frontendDir, stdio: "inherit" });
-      execSync(`${npxCmd} vite build`, { cwd: frontendDir, stdio: "inherit" });
+      execSync(`${npmCmd} install --prefer-offline`, { cwd: frontendDir, stdio: "inherit", shell: true });
+      const viteBin = path.join(frontendDir, "node_modules", ".bin", "vite");
+      execSync(`"${viteBin}" build`, { cwd: frontendDir, stdio: "inherit", shell: true });
 
       // Recompile Java
       execSync("javac -d out src/models/*.java src/datastructures/*.java src/utils/*.java src/auth/*.java src/sync/*.java src/filesystem/*.java src/Main.java", {
