@@ -20,14 +20,36 @@
 
 ## ⚡ Install
 
+### Option 1 — npm (recommended)
+
 ```bash
 npm install -g vaultfs
 ```
-Then just type:
+> Requires **Java 11+** and **Node.js 18+**
+
+### Option 2 — One-line install (no npm needed)
+
+**Windows (PowerShell):**
+```powershell
+curl -o install.bat https://raw.githubusercontent.com/ThreatGuardian/vaultfs-core/main/install.bat && install.bat
+```
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/ThreatGuardian/vaultfs-core/main/install.sh | bash
+```
+> Requires **Java 11+** and **Git**
+
+---
+
+## 🚀 Usage
+
 ```bash
 vaultfs
 ```
-> Requires Java 11+ and Node.js 18+
+
+On first launch, a browser opens for Google/GitHub login.  
+Press **Enter** to skip and continue as Guest.
 
 ---
 
