@@ -164,9 +164,9 @@ public class Main {
 
     /** Prints the complete command help table. */
     private static void printHelp() {
-        System.out.println("╔════════════════════════════════════════════════════════════╗");
-        System.out.println("║              File System Simulator — Commands              ║");
-        System.out.println("╠════════════════════════════════════════════════════════════╣");
+        System.out.println("╔════════════════════════════════════════════════════════════════╗");
+        System.out.println("║                File System Simulator — Commands                ║");
+        System.out.println("╠════════════════════════════════════════════════════════════════╣");
         printHelpRow("pwd", "Print current path");
         printHelpRow("cd <name>", "Navigate into directory");
         printHelpRow("cd ..", "Go one level up");
@@ -188,16 +188,16 @@ public class Main {
         printHelpRow("whoami", "Show account details");
         printHelpRow("clear", "Clear terminal");
         printHelpRow("exit", "Logout and exit program");
-        System.out.println("╠════════════════════════════════════════════════════════════╣");
+        System.out.println("╠════════════════════════════════════════════════════════════════╣");
         printHelpRow("vaultfs --version", "Show installed version");
         printHelpRow("vaultfs update", "Pull latest updates and rebuild");
         printHelpRow("vaultfs doctor", "Run health checks on install");
-        System.out.println("╚════════════════════════════════════════════════════════════╝");
+        System.out.println("╚════════════════════════════════════════════════════════════════╝");
     }
 
     private static void printHelpRow(String cmd, String desc) {
         String paddedCmd = String.format("%-28s", cmd);
-        String paddedDesc = String.format("%-27s", desc);
+        String paddedDesc = String.format("%-31s", desc);
         System.out.println("║ " + Colors.c(Colors.YELLOW, paddedCmd) + "   " + Colors.c(Colors.WHITE, paddedDesc) + " ║");
     }
 

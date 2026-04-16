@@ -664,6 +664,27 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// ─── Keep-alive: ping self every 10 minutes to prevent Render free tier spin-down
+const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const SERVER_URL_PING = process.env.SERVER_URL || 'http://localhost:4000';
+
+function keepAlive() {
+    const url = `${SERVER_URL_PING}/health`;
+    const protocol = url.startsWith('https') ? require('https') : require('http');
+
+    protocol.get(url, (res) => {
+        console.log(`[KeepAlive] Pinged ${url} — status: ${res.statusCode}`);
+    }).on('error', (err) => {
+        console.log(`[KeepAlive] Ping failed: ${err.message}`);
+    });
+}
+
+// Start pinging after 1 minute delay (let server fully start first)
+setTimeout(() => {
+    keepAlive(); // first ping
+    setInterval(keepAlive, PING_INTERVAL);
+}, 60 * 1000);
+
 // ─── Start server ────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557`);
